@@ -110,5 +110,116 @@ def dilate(binary, k=3, iters=1):
         out = nxt
 
     return out
+#SEGMENT 2`
+def opening(binary, k=3, iters=1):
+    # OPENING REMOVES SMALL WHITE NOISE
+    return dilate(erode(binary, k=k, iters=iters), k=k, iters=iters)
+
+def closing(binary, k=5, iters=1):
+    # CLOSING FILLS SMALL HOLES AND GAPS
+    return erode(dilate(binary, k=k, iters=iters), k=k, iters=iters)
+
+def connected_components(binary, connectivity=8):
+    # LABEL CONNECTED COMPONENTS USING BFS
+    h, w = binary.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    regions = []
+    current = 0
+
+    if connectivity == 4:
+        nbrs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    else:
+        nbrs = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+    for y in range(h):
+        for x in range(w):
+            if binary[y, x] == 1 and labels[y, x] == 0:
+                current += 1
+                q = deque()
+                q.append((y, x))
+                labels[y, x] = current #X AND Y MIN AND VALUES COMPUTED BELOW 
+
+                area = 0
+                miny = y
+                maxy = y
+                minx = x
+                maxx = x
+
+                while q:
+                    cy, cx = q.popleft()
+                    area += 1
+
+                    if cy < miny:
+                        miny = cy
+                    if cy > maxy:
+                        maxy = cy
+                    if cx < minx:
+                        minx = cx
+                    if cx > maxx:
+                        maxx = cx
+
+                    for dy, dx in nbrs:
+                        ny = cy + dy
+                        nx = cx + dx
+                        if 0 <= ny < h and 0 <= nx < w:
+                            if binary[ny, nx] == 1 and labels[ny, nx] == 0:
+                                labels[ny, nx] = current
+                                q.append((ny, nx))
+
+                regions.append({
+                    "label": current,
+                    "area": int(area),
+                    "bbox": (int(miny), int(minx), int(maxy), int(maxx))
+                })
+
+    return labels, regions
+
+def extract_largest_component(binary):
+    # PICK THE LARGEST FOREGROUND REGION AS THE O RING
+    labels, regions = connected_components(binary, connectivity=8)
+    if len(regions) == 0:
+        return np.zeros_like(binary), None
+    biggest = max(regions, key=lambda r: r["area"])
+    mask = (labels == biggest["label"]).astype(np.uint8)
+    return mask, biggest
+
+def fill_holes(binary_fg):
+    # FILL HOLES INSIDE THE FOREGROUND OBJECT USING BORDER FLOOD FILL
+    h, w = binary_fg.shape
+    visited = np.zeros((h, w), dtype=np.uint8)
+    q = deque()
+
+    for x in range(w):
+        if binary_fg[0, x] == 0 and visited[0, x] == 0:
+            visited[0, x] = 1
+            q.append((0, x))
+        if binary_fg[h - 1, x] == 0 and visited[h - 1, x] == 0:
+            visited[h - 1, x] = 1
+            q.append((h - 1, x))
+
+    for y in range(h):
+        if binary_fg[y, 0] == 0 and visited[y, 0] == 0:
+            visited[y, 0] = 1
+            q.append((y, 0))
+        if binary_fg[y, w - 1] == 0 and visited[y, w - 1] == 0:
+            visited[y, w - 1] = 1
+            q.append((y, w - 1))
+
+    nbrs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+    while q:
+        cy, cx = q.popleft()
+        for dy, dx in nbrs:
+            ny = cy + dy
+            nx = cx + dx
+            if 0 <= ny < h and 0 <= nx < w:
+                if visited[ny, nx] == 0 and binary_fg[ny, nx] == 0:
+                    visited[ny, nx] = 1
+                    q.append((ny, nx))
+
+    holes = ((binary_fg == 0) & (visited == 0)).astype(np.uint8)
+    filled = binary_fg.copy()
+    filled[holes == 1] = 1
+    return filled, holes
 
 
