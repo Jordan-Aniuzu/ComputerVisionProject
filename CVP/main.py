@@ -223,3 +223,95 @@ def fill_holes(binary_fg):
     return filled, holes
 
 
+#SEGMENT 3
+
+def perimeter_4(binary_fg):
+    # APPROXIMATE PERIMETER BY COUNTING EDGE CONTACTS
+    h, w = binary_fg.shape
+    perim = 0
+    for y in range(h):
+        for x in range(w):
+            if binary_fg[y, x] == 1:
+                if y == 0 or binary_fg[y - 1, x] == 0:
+                    perim += 1
+                if y == h - 1 or binary_fg[y + 1, x] == 0:
+                    perim += 1
+                if x == 0 or binary_fg[y, x - 1] == 0:
+                    perim += 1
+                if x == w - 1 or binary_fg[y, x + 1] == 0:
+                    perim += 1
+    return int(perim)
+
+def center_of_mass(binary_fg):
+    # COMPUTE CENTER OF MASS OF FOREGROUND PIXELS
+    ys, xs = np.where(binary_fg == 1)
+    if len(xs) == 0:
+        return None
+    return float(np.mean(ys)), float(np.mean(xs))
+
+def radial_thickness_stats(binary_fg, cy, cx, angles=180):
+    # MEASURE THICKNESS CONSISTENCY AROUND THE RING ACROSS ALL IMAGES 
+    h, w = binary_fg.shape
+    max_r = int(np.hypot(h, w))
+
+    thicknesses = []
+    gaps = 0
+
+    for i in range(angles):
+        theta = (2.0 * np.pi * float(i)) / float(angles)
+        dy = float(np.sin(theta))
+        dx = float(np.cos(theta))
+
+        hits = []
+        for r in range(1, max_r):
+            y = int(round(cy + dy * float(r)))
+            x = int(round(cx + dx * float(r)))
+            if not (0 <= y < h and 0 <= x < w):
+                break
+            if binary_fg[y, x] == 1:
+                hits.append(r)
+
+        if len(hits) < 2:
+            gaps += 1
+            continue
+
+        thicknesses.append(float(hits[-1] - hits[0]))
+
+    if len(thicknesses) == 0:
+        return {"mean": 0.0, "std": 0.0, "gaps": int(gaps), "count": 0}
+
+    th = np.array(thicknesses, dtype=np.float32)
+    return {
+        "mean": float(np.mean(th)),
+        "std": float(np.std(th)),
+        "gaps": int(gaps),
+        "count": int(th.size)
+    }
+
+def classify(mask, holes, bbox):
+    # RULE BASED PASS FAIL CLASSIFICATION DUE T NO OPEN CV IMPLEMENMTATION
+    area = int(np.sum(mask))
+    hole_area = int(np.sum(holes))
+    perim = perimeter_4(mask)
+
+    miny, minx, maxy, maxx = bbox
+    bh = int(maxy - miny + 1)
+    bw = int(maxx - minx + 1)
+
+    extent = float(area) / float(bh * bw + 1e-9)
+    pa = float(perim) / float(area + 1e-9)
+
+    com = center_of_mass(mask)
+    if com is None:
+        return "FAIL", ["NO_FOREGROUND"], {"area": area}
+
+    cy, cx = com
+    radial = radial_thickness_stats(mask, cy, cx, angles=180)
+
+    total_disc = float(area + hole_area + 1e-9)
+    hole_ratio = float(hole_area) / total_disc
+
+    reasons = []
+
+
+
