@@ -313,5 +313,43 @@ def classify(mask, holes, bbox):
 
     reasons = []
 
+#SEGEMENT4
+    if radial["gaps"] > 10: #SEGMANTIAON LIMIT #SUBJECT TO BE CHANGED DUE TO OUTPUT INCOSISTENCIES
+        reasons.append("TOO_MANY_GAPS")
+
+    if radial["count"] > 0 and radial["std"] > 3.5:
+        reasons.append("THICKNESS_NOT_UNIFORM")
+
+    if extent > 0.75:
+        reasons.append("SEGMENTATION_LOOKS_SOLID")
+    if extent < 0.10:
+        reasons.append("SEGMENTATION_TOO_SMALL")
+
+    if hole_ratio < 0.15:
+        reasons.append("HOLE_TOO_SMALL")
+    if hole_ratio > 0.75:
+        reasons.append("HOLE_TOO_LARGE")
+
+    if pa > 0.25:
+        reasons.append("EDGE_TOO_ROUGH")
+
+    info = {
+        "area": area,
+        "hole_area": hole_area,
+        "perim": perim,
+        "extent": extent,
+        "pa": pa,
+        "hole_ratio": hole_ratio,
+        "radial_mean": radial["mean"],
+        "radial_std": radial["std"],
+        "radial_gaps": radial["gaps"]
+    }
+
+    if len(reasons) > 0:
+        return "FAIL", reasons, info
+    return "PASS", reasons, info
+
+
+
 
 
