@@ -1,7 +1,15 @@
 #COMPUTER VISION PROJECT ORINGS PROJECT BY JORDAN ANIZU (B00151878)
 
 #AL IMPORTS FOR PROJECTS NO OPEN CV USED SO MANUALLY IMPLEMENTATION
+# MARKING POINTS
+#Finding the threshold using the image histogram and performing the thresholding (15 marks)
+#Performing the binary morphology to close any interior holes (15 marks)
+#Implementing connected component labelling to extract the regions (30 marks)
+#Analyse the regions to classify the Oring as being a pass or fail (30 marks)
+#Overall program structure (measure the image processing time add it to the output image as
+#a text annotation). (10 marks
 
+#MARKING POINTS
 #SEGMENT 1
 import os
 import time
@@ -348,6 +356,7 @@ def classify(mask, holes, bbox):
     if len(reasons) > 0:
         return "FAIL", reasons, info
     return "PASS", reasons, info
+
 
 
 
