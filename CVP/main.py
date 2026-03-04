@@ -467,24 +467,24 @@ def classify(mask, holes, bbox):
 
 #SEGEMENT4
     if radial["gaps"] > 10: #SEGMANTIAON LIMIT SUBJECT TO BE CHANGED DUE TO OUTPUT INCOSISTENCIES #UPDATE SEGMENTAION NUMBER OF 10 KEPT
-        reasons.append("TOO_MANY_GAPS")
+        reasons.append("THERE IS TOO MANY GAPS")
 
     if radial["count"] > 0 and radial["std"] > 3.5:
-        reasons.append("THICKNESS_NOT_UNIFORM")
+        reasons.append("THE THICKNESS IS NOT UNIFORM")
 
     #REMOVED SEGMENTATION_LOOKS_SOLID FROM FAIL REASONS BECAUSE IT IS NOT A DEFECT TRIGGER
 
 
     if extent < 0.10:
-        reasons.append("SEGMENTATION_TOO_SMALL")
+        reasons.append("THE SEGMENTATION IS TOO SMALL")
 
     if hole_ratio < 0.15:
-        reasons.append("HOLE_TOO_SMALL")
+        reasons.append("THE HOLE IS TOO SMALL")
     if hole_ratio > 0.75:   #OUTPUT LOGIC STATMENTS
-        reasons.append("HOLE_TOO_LARGE")
+        reasons.append("THE HOLE IS TOO LARGE")
 
     if pa > 0.25:
-        reasons.append("EDGE_TOO_ROUGH")
+        reasons.append("THE EDGE IS TOO ROUGH")
 
     info = {
         "area": area,
@@ -604,4 +604,5 @@ def run_folder(input_dir, output_dir):
     return results
 if __name__ == "__main__": #RUNS BOTH FOLDERS  IN THE MIX
     run_folder(r"C:\Users\jordo\OneDrive\Desktop\CVP\Orings", "Orings2") #./ FOLDER ISSUE ERROR TO BE FIXED (COULNT FIND PATH USED RAW PATH TO READ FILE TO AVOID UNICODE ERROR)
+
 
