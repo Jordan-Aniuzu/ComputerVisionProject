@@ -8,7 +8,7 @@
 #Analyze the regions to classify the Oring as being a pass or fail (30 marks)
 #Overall program structure (measure the image processing time add it to the output image as
 #a text annotation). (10 marks
-
+#https://github.com/Jordan-Aniuzu/ComputerVisionProject PROJECT GITHUB LINK
 #MARKING POINTS
 
 
@@ -604,3 +604,4 @@ def run_folder(input_dir, output_dir):
     return results
 if __name__ == "__main__": #RUNS BOTH FOLDERS  IN THE MIX
     run_folder(r"C:\Users\jordo\OneDrive\Desktop\CVP\Orings", "Orings2") #./ FOLDER ISSUE ERROR TO BE FIXED (COULNT FIND PATH USED RAW PATH TO READ FILE TO AVOID UNICODE ERROR)
+
