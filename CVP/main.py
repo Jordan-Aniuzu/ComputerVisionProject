@@ -358,6 +358,90 @@ def classify(mask, holes, bbox):
     return "PASS", reasons, info
 
 
+def process_image(path):
+    # FULL PIPELINE FOR ONE IMAGE
+    t0 = time.perf_counter()
+
+    bgr = cv2.imread(path)
+    if bgr is None:
+        return None, "FAIL", ["READ_ERROR"], 0.0
+
+    gray = to_grayscale(bgr)
+    hist = histogram_u8(gray)
+    t = otsu_threshold_from_hist(hist)
+
+    binary = threshold_binary(gray, t)
+
+    binary = opening(binary, k=3, iters=1)
+    binary = closing(binary, k=5, iters=1)
+
+    ring_mask, biggest = extract_largest_component(binary)
+    if biggest is None:
+        elapsed_ms = float((time.perf_counter() - t0) * 1000.0)
+        out = bgr.copy()
+        cv2.putText(out, "FAIL", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
+        cv2.putText(out, "NO RING FOUND", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        cv2.putText(out, f"{elapsed_ms:.1f} ms", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        return out, "FAIL", ["NO_RING"], elapsed_ms
+
+    filled, holes = fill_holes(ring_mask)
+
+    label, reasons, info = classify(ring_mask, holes, biggest["bbox"])
+
+    elapsed_ms = float((time.perf_counter() - t0) * 1000.0)
+
+    out = bgr.copy()
+    miny, minx, maxy, maxx = biggest["bbox"]
+    cv2.rectangle(out, (minx, miny), (maxx, maxy), (255, 255, 255), 2)
+
+    color = (0, 255, 0) if label == "PASS" else (0, 0, 255)
+    cv2.putText(out, label, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 3)
+    cv2.putText(out, f"{elapsed_ms:.1f} ms", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+    cv2.putText(
+        out,
+        f"AREA {info['area']} HOLE {info['hole_area']} EXT {info['extent']:.2f} GAP {info['radial_gaps']}",
+        (20, 120),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.55,
+        (255, 255, 255),
+        2
+    )
+
+    return out, label, reasons, elapsed_ms
+
+def run_folder(input_dir, output_dir):
+    # RUN PIPELINE ON ALL IMAGES IN A FOLDER
+    os.makedirs(output_dir, exist_ok=True)
+
+#IMAGE TYPES TO BE ACCEPTED
+    exts = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
+    files = [f for f in os.listdir(input_dir) if os.path.splitext(f.lower())[1] in exts]
+    files.sort()
+
+    results = []
+    for name in files:
+        in_path = os.path.join(input_dir, name)
+        out_img, label, reasons, ms = process_image(in_path)
+
+        if out_img is None:
+            continue
+
+        out_path = os.path.join(output_dir, name)
+        cv2.imwrite(out_path, out_img)
+
+        print(name, label, f"{ms:.1f} ms", reasons)
+        results.append((name, label, ms, reasons))
+
+    return results
+
+if __name__ == "__main__": #RUNS BOTH FOLDERS  IN THE MIX
+    run_folder(r"C:\Users\jordo\OneDrive\Desktop\CVP\Orings", "Orings2") #./ FOLDER ISSUE ERROR TO BE FIXED (COULNT FIND PATH USED RAW PATH TO READ FILE TO AVOID UNICODE ERROR)
+
+
+
+
+
 
 
 
